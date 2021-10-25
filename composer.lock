@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a8102fc5e8edc423f13d9cfc79aceafe",
+    "content-hash": "e43b0d79dd54a7da4e58d678482589e8",
     "packages": [
         {
             "name": "asm89/stack-cors",
@@ -432,6 +432,55 @@
                 }
             ],
             "time": "2020-11-24T19:55:57+00:00"
+        },
+        {
+            "name": "dzarezenko/coinmarketcap-api",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dzarezenko/coinmarketcap-api.git",
+                "reference": "5967a792c2244e18aaa7587a308463b0e33feea0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dzarezenko/coinmarketcap-api/zipball/5967a792c2244e18aaa7587a308463b0e33feea0",
+                "reference": "5967a792c2244e18aaa7587a308463b0e33feea0",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "coinmarketcap\\api\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dmytro Zarezenko",
+                    "email": "dmytro.zarezenko@gmail.com",
+                    "homepage": "https://github.com/dzarezenko",
+                    "role": "Development"
+                }
+            ],
+            "description": "PHP wrapper for the CoinMarketCap API.",
+            "homepage": "https://github.com/dzarezenko/coinmarketcap-api",
+            "keywords": [
+                "api",
+                "coinmarketcap"
+            ],
+            "support": {
+                "email": "dmytro.zarezenko@gmail.com",
+                "issues": "https://github.com/dzarezenko/coinmarketcap-api/issues",
+                "source": "https://github.com/dzarezenko/coinmarketcap-api/tree/master"
+            },
+            "time": "2018-03-17T10:55:34+00:00"
         },
         {
             "name": "egulias/email-validator",
@@ -8021,7 +8070,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {
+        "dzarezenko/coinmarketcap-api": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
