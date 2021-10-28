@@ -2,16 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Telegram;
+//use App\Models\Telegram;
+use App\Models\Telegram_user;
 use Carbon\Carbon;
+use Telegram\Bot\Laravel\Facades\Telegram;
 use coinmarketcap\api\CoinMarketCap;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
 
 class TelegramController extends Controller
 {
     protected $telegram;
+    protected $chat_id;
+    protected $username;
+    protected $text;
 
     public function __construct()
     {
@@ -26,7 +33,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://6bb4-88-204-255-195.ngrok.io' . env('TELEGRAM_BOT_TOKEN') . '/webhook';
+        $url = 'https://760c-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -34,27 +41,52 @@ class TelegramController extends Controller
 
     public function handleRequest(Request $request)
     {
+//        $this->chat_id = $request['message']['chat']['id'];
+//        $this->username = $request['message']['from']['username'];
+//        $this->text = $request['message']['text'];
+
+
+//        $this->telegram->getChatMember(['chat_id' => $request['my_chat_member']['chat']['id'],
+//            'user_id' => 610515462]);
+//        if ($request['my_chat_member']['chat']['id']) {
+//            $this->telegram->sendMessage([
+//              'chat_id' => $request['my_chat_member']['chat']['id'],
+//              'text' => "Привет Всем",
+//]);
+//        }
+
+
         $this->chat_id = $request['message']['chat']['id'];
-        $this->username = $request['message']['from']['username'];
+        $this->user_id = $request['message']['from']['id'];
         $this->text = $request['message']['text'];
 
-        switch ($this->text) {
-            case '/start':
-            case '/menu':
-                $this->showMenu();
-                break;
-            case '/getGlobal':
-                $this->showGlobal();
-                break;
-            case '/getTicker':
-                $this->getTicker();
-                break;
-            case '/getCurrencyTicker':
-                $this->getCurrencyTicker();
-                break;
-            default:
-                $this->checkDatabase();
-        }
+        Telegram_user::firstOrCreate($request['message']['from']);
+
+        $this->telegram->sendMessage([
+            'chat_id' => $this->chat_id,
+            'text' => "Привет твой tegram id: " . $this->user_id,
+        ]);
+
+//        switch ($this->text) {
+//            case '/start':
+//
+//            case '/menu':
+//                $this->showMenu();
+//                break;
+//        }
+    }
+
+    public function updateHandler()
+    {
+        $update = $this->telegram->commandsHandler(true);
+
+        Log::debug('$update');
+        Log::debug($update);
+
+        $message = $update->all();
+
+
+        dd($update);
     }
 
     public function showMenu($info = null)
@@ -64,82 +96,20 @@ class TelegramController extends Controller
             $message .= $info . chr(10);
         }
         $message .= '/menu' . chr(10);
-        $message .= '/getGlobal' . chr(10);
-        $message .= '/getTicker' . chr(10);
-        $message .= '/getCurrencyTicker' . chr(10);
+        $message .= '/menu2' . chr(10);
 
         $this->sendMessage($message);
     }
 
-    public function showGlobal()
+    public function linkGroup()
     {
-        $data = CoinMarketCap::getGlobalData();
+//        $this->telegram->sendMessage([
+//            'chat_id' => $this->chat_id,
+//            'text' => "<a href="https://www.google.com/">Поисковая система Яндекс</a>"  ,
+//        ]);
 
-        $this->sendMessage($this->formatArray($data), true);
-    }
-
-    public function getTicker()
-    {
-        $data = CoinMarketCap::getTicker();
-        $formatted_data = "";
-
-        foreach ($data as $datum) {
-            $formatted_data .= $this->formatArray($datum);
-            $formatted_data .= "-----------\n";
-        }
-
-        $this->sendMessage($formatted_data, true);
-    }
-
-    public function getCurrencyTicker()
-    {
-        $message = "Please enter the name of the Cryptocurrency";
-
-        Telegram::create([
-            'username' => $this->username,
-            'command' => __FUNCTION__
-        ]);
-
-        $this->sendMessage($message);
-    }
-
-    public function checkDatabase()
-    {
-        try {
-            $telegram = Telegram::where('username', $this->username)->latest()->firstOrFail();
-
-            if ($telegram->command == 'getCurrencyTicker') {
-                $response = CoinMarketCap::getCurrencyTicker($this->text);
-
-                if (isset($response['error'])) {
-                    $message = 'Sorry no such cryptocurrency found';
-                } else {
-                    $message = $this->formatArray($response[0]);
-                }
-
-                Telegram::where('username', $this->username)->delete();
-
-                $this->sendMessage($message, true);
-            }
-        } catch (Exception $exception) {
-            $error = "Sorry, no such cryptocurrency found.\n";
-            $error .= "Please select one of the following options";
-            $this->showMenu($error);
-        }
-    }
-
-    protected function formatArray($data)
-    {
-        $formatted_data = "";
-        foreach ($data as $item => $value) {
-            $item = str_replace("_", " ", $item);
-            if ($item == 'last updated') {
-                $value = Carbon::createFromTimestampUTC($value)->diffForHumans();
-            }
-            $formatted_data .= "<b>{$item}</b>\n";
-            $formatted_data .= "\t{$value}\n";
-        }
-        return $formatted_data;
+//        $this->sendMessage($message);
+//        $this->sendMessage($message, true);
     }
 
     protected function sendMessage($message, $parse_html = false)
@@ -153,4 +123,6 @@ class TelegramController extends Controller
 
         $this->telegram->sendMessage($data);
     }
+
+
 }

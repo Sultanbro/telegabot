@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\TelegramController;
 use Illuminate\Support\Facades\Route;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,5 +20,6 @@ Route::get('/', function () {
 });
 
 Route::get('get-me', [TelegramController::class, 'getMe']);
-Route::get('set-hook', [TelegramController::class, 'getMe']);
-Route::post(env('TELEGRAM_BOT_TOKEN') . '/webhook', [TelegramController::class, 'handleRequest']);
+Route::get('set-hook', [TelegramController::class, 'setWebHook']);
+Route::get('upda', [TelegramController::class, 'updateHandler']);
+Route::post(Telegram::getAccessToken(), [TelegramController::class, 'handleRequest']);
