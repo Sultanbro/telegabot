@@ -17,8 +17,9 @@ class TelegramController extends Controller
 {
     protected $telegram;
     protected $chat_id;
-    protected $username;
+    protected $user_id;
     protected $text;
+    protected $from;
 
     public function __construct()
     {
@@ -33,7 +34,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://760c-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
+        $url = 'https://6214-88-204-255-195.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -41,65 +42,49 @@ class TelegramController extends Controller
 
     public function handleRequest(Request $request)
     {
-//        $this->chat_id = $request['message']['chat']['id'];
-//        $this->username = $request['message']['from']['username'];
-//        $this->text = $request['message']['text'];
-
-
-//        $this->telegram->getChatMember(['chat_id' => $request['my_chat_member']['chat']['id'],
-//            'user_id' => 610515462]);
-//        if ($request['my_chat_member']['chat']['id']) {
-//            $this->telegram->sendMessage([
-//              'chat_id' => $request['my_chat_member']['chat']['id'],
-//              'text' => "Привет Всем",
-//]);
-//        }
-
-
         $this->chat_id = $request['message']['chat']['id'];
         $this->user_id = $request['message']['from']['id'];
         $this->text = $request['message']['text'];
+        $this->from = $request['message']['from'];
 
-        Telegram_user::firstOrCreate($request['message']['from']);
-
-        $this->telegram->sendMessage([
-            'chat_id' => $this->chat_id,
-            'text' => "Привет твой tegram id: " . $this->user_id,
-        ]);
-
-//        switch ($this->text) {
-//            case '/start':
-//
+        switch ($this->text) {
+            case '/start':
+                $this->saveTelegramUser();
 //            case '/menu':
 //                $this->showMenu();
-//                break;
-//        }
+                break;
+        }
     }
 
     public function updateHandler()
     {
-        $update = $this->telegram->commandsHandler(true);
+        $response = $this->telegram->getFullChat(['chat_id' => -1001583162473,]);
+//        ['chat_id' => -1001583162473,]
 
-        Log::debug('$update');
-        Log::debug($update);
-
-        $message = $update->all();
-
-
-        dd($update);
+        dd($response);
     }
 
-    public function showMenu($info = null)
+    public function saveTelegramUser()
     {
-        $message = '';
-        if ($info) {
-            $message .= $info . chr(10);
-        }
-        $message .= '/menu' . chr(10);
-        $message .= '/menu2' . chr(10);
+        Telegram_user::firstOrCreate($this->from);
 
-        $this->sendMessage($message);
+        $this->telegram->sendMessage([
+            'chat_id' => $this->chat_id,
+            'text' => "Привет твой tegram id: " . $this->user_id ,
+        ]);
     }
+
+//    public function showMenu($info = null)
+//    {
+//        $message = '';
+//        if ($info) {
+//            $message .= $info . chr(10);
+//        }
+//        $message .= '/menu' . chr(10);
+//        $message .= '/menu2' . chr(10);
+//
+//        $this->sendMessage($message);
+//    }
 
     public function linkGroup()
     {
