@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Telegram_user extends Model
+class TelegramUser extends Model
 {
     protected $fillable = [
         'id',

@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-//use App\Models\Telegram;
-use App\Models\Telegram_user;
+use App\Models\Group;
+use App\Models\TelegramUser;
 use Carbon\Carbon;
+use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Laravel\Facades\Telegram;
 use coinmarketcap\api\CoinMarketCap;
 use Exception;
@@ -34,7 +35,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://6214-88-204-255-195.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
+        $url = 'https://6b3e-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -58,15 +59,17 @@ class TelegramController extends Controller
 
     public function updateHandler()
     {
-        $response = $this->telegram->getFullChat(['chat_id' => -1001583162473,]);
-//        ['chat_id' => -1001583162473,]
+        $response = $this->telegram->getChatMembersCount(['chat_id' => env('CHAT_ID'),]);
+        $response2 = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => 844867712,]);
+        $response3 = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => 529595184,]);
+//        $response4 = $this->telegram->get();
 
-        dd($response);
+        dd($response, $response2, $response3);
     }
 
     public function saveTelegramUser()
     {
-        Telegram_user::firstOrCreate($this->from);
+        TelegramUser::firstOrCreate($this->from);
 
         $this->telegram->sendMessage([
             'chat_id' => $this->chat_id,
@@ -97,6 +100,53 @@ class TelegramController extends Controller
 //        $this->sendMessage($message, true);
     }
 
+//    public function userInGroup($user_id, $chat_id)
+//    {
+//        $response = $this->telegram->getChatMember(['chat_id' => $chat_id, 'user_id' => $user_id,]);
+//        if ($response->status == 'restricted') {
+//            return true;
+//        }
+//        return false;
+//    }
+
+    public function verificationSubs()
+    {
+        $users = TelegramUser::all();
+
+        foreach ($users as $user) {
+            try {
+                $response = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => $user->id,]);
+                if ($response->status == 'restricted') {
+                    $this->checkUserStatus($user);
+                }
+            } catch (TelegramSDKException $e) {
+                continue;
+            }
+        }
+
+    }
+
+    public function checkUserStatus($user)
+    {
+        $user_group = Group::where('telegram_user_id', $user->id)->get();
+        if ($user_group > 0) {
+            return Group::created(['telegram_user_id' => $user->id, 'group_id' => env('CHAT_ID'), 'pay_day' => Carbon::now()->addDays(5)]);
+        }
+        $this->checkUserPay($user);
+
+    }
+
+    public function checkUserPay($user)
+    {
+        if ($user->join_status == 1) $user->pay = 1;
+        if ($user->pay == 1) {
+            if ($user->join->date() < Carbon::now()->toDate()) {
+                $this->telegram->kickChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => $user->id, ]);
+            }
+//            elseif ($user->join->date() )
+        }
+    }
+
     protected function sendMessage($message, $parse_html = false)
     {
         $data = [
@@ -108,6 +158,5 @@ class TelegramController extends Controller
 
         $this->telegram->sendMessage($data);
     }
-
 
 }
