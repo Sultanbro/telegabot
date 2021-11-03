@@ -16,10 +16,8 @@ class CreateGroupsTable extends Migration
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->foreignId('telegram_user_id');
-            $table->integer('status')->default(1)->comment('1 = в группе, 2 = вышел из группы, 3 = должен оплатить');
-            $table->integer('group_id');
-            $table->integer('pay')->default(0);
-            $table->date('pay_day');
+            $table->integer('group_status')->default(0)->comment('1 = в группе, 2 = вышел из группы, 3 = должен оплатить');
+            $table->integer('channel_status')->default(0)->comment('1 = в группе, 2 = вышел из группы, 3 = должен оплатить');
             $table->integer('join_status')->default(1)->comment('1 = первый заход, 2 = 2или больше вход');
             $table->date('join')->default(\Carbon\Carbon::now());
             $table->timestamps();

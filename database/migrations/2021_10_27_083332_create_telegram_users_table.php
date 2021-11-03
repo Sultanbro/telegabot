@@ -19,7 +19,10 @@ class CreateTelegramUsersTable extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('username')->nullable();
-            $table->string('language_code', 10)->nullable();
+            $table->integer('status')->default(0)->comment('1 = в группе, 2 = вышел из группы, 3 = должен оплатить');
+            $table->integer('pay')->default(0);
+            $table->date('pay_day')->nullable();
+            $table->string('language_code')->nullable();
             $table->timestamps();
         });
     }

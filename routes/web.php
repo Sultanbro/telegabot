@@ -21,5 +21,5 @@ Route::get('/', function () {
 
 Route::get('get-me', [TelegramController::class, 'getMe']);
 Route::get('set-hook', [TelegramController::class, 'setWebHook']);
-Route::get('upda', [TelegramController::class, 'updateHandler']);
+Route::get('upda', [TelegramController::class, 'userInGroup']);
 Route::post(Telegram::getAccessToken(), [TelegramController::class, 'handleRequest']);

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Telegram\Bot\Api;
+use function PHPUnit\Framework\isNull;
 
 class TelegramController extends Controller
 {
@@ -35,7 +36,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://6b3e-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
+        $url = 'https://e360-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -43,37 +44,29 @@ class TelegramController extends Controller
 
     public function handleRequest(Request $request)
     {
-        $this->chat_id = $request['message']['chat']['id'];
-        $this->user_id = $request['message']['from']['id'];
-        $this->text = $request['message']['text'];
-        $this->from = $request['message']['from'];
+        if (isset($request['message']['text'])) {
+            $this->chat_id = $request['message']['chat']['id'];
+            $this->user_id = $request['message']['from']['id'];
+            $this->text = $request['message']['text'];
+            $this->from = $request['message']['from'];
 
-        switch ($this->text) {
-            case '/start':
-                $this->saveTelegramUser();
+            switch ($this->text) {
+                case '/start':
+                    $this->saveTelegramUser();
 //            case '/menu':
 //                $this->showMenu();
-                break;
+                    break;
+            }
         }
-    }
-
-    public function updateHandler()
-    {
-        $response = $this->telegram->getChatMembersCount(['chat_id' => env('CHAT_ID'),]);
-        $response2 = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => 844867712,]);
-        $response3 = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => 529595184,]);
-//        $response4 = $this->telegram->get();
-
-        dd($response, $response2, $response3);
     }
 
     public function saveTelegramUser()
     {
-        TelegramUser::firstOrCreate($this->from);
+        $user = TelegramUser::firstOrCreate($this->from);
 
         $this->telegram->sendMessage([
             'chat_id' => $this->chat_id,
-            'text' => "Привет твой tegram id: " . $this->user_id ,
+            'text' => "Привет твой tegram id: " . $this->user_id . ' 11 ' . date('Y-m-d', strtotime($user->pay_day. " +5 day")),
         ]);
     }
 
@@ -100,50 +93,100 @@ class TelegramController extends Controller
 //        $this->sendMessage($message, true);
     }
 
-//    public function userInGroup($user_id, $chat_id)
-//    {
-//        $response = $this->telegram->getChatMember(['chat_id' => $chat_id, 'user_id' => $user_id,]);
-//        if ($response->status == 'restricted') {
-//            return true;
-//        }
-//        return false;
-//    }
+    public function userInGroup()
+    {
+        $response = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => '844867712',]);
+//        return $response;
+        if ($response->status == 'restricted' or $response->status == 'member') {
+            return $response['status'];
+        }
+        return false;
+    }
 
-    public function verificationSubs()
+    public function usersCheck($chats)
     {
         $users = TelegramUser::all();
-
+        $count = 0;
         foreach ($users as $user) {
+            $checks = $this->checkStatus($user->id, $chats);
+            $this->saveCheck($user, $checks);
+
+        }
+    }
+
+    public function checkStatus($user_id, $chats_id)
+    {
+        foreach ($chats_id as $k => $chat) {
             try {
-                $response = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => $user->id,]);
-                if ($response->status == 'restricted') {
-                    $this->checkUserStatus($user);
+                $response = $this->telegram->getChatMember(['chat_id' => $chat, 'user_id' => $user_id,]);
+                if ($response->status == 'restricted' or $response->status == 'member') {
+                    $results[$k] = 1;
+                } else {
+                    $results[$k] = 0;
                 }
             } catch (TelegramSDKException $e) {
+                var_dump($e);
                 continue;
             }
         }
-
+        return $results;
     }
 
-    public function checkUserStatus($user)
+    public function saveCheck(TelegramUser $user, $checks)
     {
-        $user_group = Group::where('telegram_user_id', $user->id)->get();
-        if ($user_group > 0) {
-            return Group::created(['telegram_user_id' => $user->id, 'group_id' => env('CHAT_ID'), 'pay_day' => Carbon::now()->addDays(5)]);
-        }
-        $this->checkUserPay($user);
-
-    }
-
-    public function checkUserPay($user)
-    {
-        if ($user->join_status == 1) $user->pay = 1;
-        if ($user->pay == 1) {
-            if ($user->join->date() < Carbon::now()->toDate()) {
-                $this->telegram->kickChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => $user->id, ]);
+        foreach ($checks as $k => $check) {
+            $group = Group::where('telegram_user_id', $user->id)->first();
+            if ($check == 1) {
+            if ($group) {
+                $group->update([$k => $check]);
+                    }else {
+                        Group::create(['telegram_user_id' => $user->id, $k => $check,]);
+                    }
+                if (is_null($user->pay_day)) {
+                    $user->update(['status' => $check, 'pay_day' => Carbon::now()->addDays(7)]);
+                }
+                $user->update(['status' => $check,]);
             }
-//            elseif ($user->join->date() )
+        }
+    }
+
+    public function checkUserDay($chats)
+    {
+        $users = TelegramUser::where('status', 1)->get();
+        foreach ($users as $user) {
+            if ($user->pay_day < Carbon::now()->toDate()) {
+                foreach ($chats as $chat){
+                    try {
+                        $this->telegram->kickChatMember(['chat_id' => $chat, 'user_id' => $user->id,]);
+                        $user->update(['status' => 2]);
+                    } catch (TelegramSDKException $e) {
+                        continue;
+                    }
+                }
+            }
+            $date = date('Y-m-d', strtotime($user->pay_day. " - 3 day")) ;
+            if ($date <= Carbon::now()->toDate()) {
+                try {
+                    $this->telegram->sendMessage([
+                        'chat_id' => $user->id,
+                        'text' => "Привет, оплати дае а то из группы потеряещся до" . $user->pay_day,
+                    ]);
+                } catch (TelegramSDKException $e) {
+                    continue;
+                }
+            }
+        }
+
+    }
+
+    public function checkUserPayDay()
+    {
+        $users = TelegramUser::all();
+        foreach ($users as $user) {
+            if ($user->pay == 1) {
+                $pay_day = $user->pay_day;
+                $user->update(['pay_day' => date('Y-m-d', strtotime($pay_day. " +10 day")), 'pay' => 0,]);
+            }
         }
     }
 
