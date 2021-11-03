@@ -66,7 +66,7 @@ class TelegramController extends Controller
 
         $this->telegram->sendMessage([
             'chat_id' => $this->chat_id,
-            'text' => "Привет твой tegram id: " . $this->user_id . ' 11 ' . date('Y-m-d', strtotime($user->pay_day. " +5 day")),
+            'text' => "Привет твой tegram id: " . $this->user_id ,
         ]);
     }
 
@@ -93,7 +93,7 @@ class TelegramController extends Controller
 //        $this->sendMessage($message, true);
     }
 
-    public function userInGroup()
+    public function userInGroup(): bool
     {
         $response = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => '844867712',]);
 //        return $response;
@@ -114,7 +114,7 @@ class TelegramController extends Controller
         }
     }
 
-    public function checkStatus($user_id, $chats_id)
+    public function checkStatus($user_id, $chats_id): array
     {
         foreach ($chats_id as $k => $chat) {
             try {
@@ -185,7 +185,8 @@ class TelegramController extends Controller
         foreach ($users as $user) {
             if ($user->pay == 1) {
                 $pay_day = $user->pay_day;
-                $user->update(['pay_day' => date('Y-m-d', strtotime($pay_day. " +10 day")), 'pay' => 0,]);
+                $date = date('Y-m-d', strtotime($pay_day. " +10 day"));
+                $user->update(['pay_day' => $date, 'pay' => 0,]);
             }
         }
     }

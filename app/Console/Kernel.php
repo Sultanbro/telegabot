@@ -2,8 +2,12 @@
 
 namespace App\Console;
 
+use App\Console\Commands\CheckUserDayCommand;
+use App\Console\Commands\CheckUserPayCommand;
+use App\Console\Commands\VerificationSubsCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
@@ -13,7 +17,9 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        VerificationSubsCommand::class,
+        CheckUserPayCommand::class,
+        CheckUserDayCommand::class,
     ];
 
     /**
@@ -25,6 +31,21 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+        try {
+            $schedule->command('VerSud')
+                ->everySixHours()
+                ->timezone('Asia/Almaty');
+            $schedule->command('CheckPay')
+                ->hourly()
+                ->timezone('Asia/Almaty');
+            $schedule->command('CheckDay')
+                ->dailyAt('09:00')
+                ->timezone('Asia/Almaty');
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+        }
+
     }
 
     /**

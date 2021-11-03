@@ -5,14 +5,14 @@ namespace App\Console\Commands;
 use App\Http\Controllers\TelegramController;
 use Illuminate\Console\Command;
 
-class VerificationSubsCommand extends Command
+class CheckUserPayCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'VerSud';
+    protected $signature = 'CheckPay';
 
     /**
      * The console command description.
@@ -38,7 +38,6 @@ class VerificationSubsCommand extends Command
      */
     public function handle()
     {
-        $chats = ['group_status' => env('CHAT_ID'), 'channel_status' => env('CHANNEL_id'),];
-        (new TelegramController)->usersCheck($chats);
+        (new TelegramController())->checkUserPayDay();
     }
 }
