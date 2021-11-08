@@ -37,7 +37,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://59e1-88-204-255-195.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
+        $url = 'https://a337-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -54,6 +54,7 @@ class TelegramController extends Controller
             switch ($this->text) {
                 case '/start':
                     $this->saveTelegramUser();
+                    break;
                 case '/getTrial':
                     $this->trialLinkGroup();
 //            case '/menu':
@@ -94,23 +95,24 @@ class TelegramController extends Controller
 
     public function trialLinkGroup()
     {
-        if (count(TrialLink::where('telegram_user_id', $this->from['id'])->where('trial_link', 1)->get()) > 1) {
-
-            $this->telegram->sendMessage([
-            'chat_id' => $this->chat_id,
-            'text' => 'Вы уже получали пробный доступ',
-        ]);
-
-        }else {
-            $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
-                'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
-            ]);
-            $this->telegram->sendMessage([
-                'chat_id' => $this->chat_id,
-                'text' => $link['result']['invite_link'],
-            ]);
-            TrialLink::create(['telegram_user_id' => $this->chat_id, 'trial_link' => 1]);
+        if (!$trial = TrialLink::firstWhere('telegram_user_id', $this->from['id'])) {
+            TrialLink::create(['telegram_user_id' => $this->chat_id, 'trial_link' => 0]);
         }
+            if (TrialLink::firstWhere('trial_link', 1)) {
+                $this->telegram->sendMessage([
+                    'chat_id' => $this->chat_id,
+                    'text' => 'Вы уже получали пробный доступ',
+                ]);
+            }else{
+                $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
+                    'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
+                ]);
+                $this->telegram->sendMessage([
+                    'chat_id' => $this->chat_id,
+                    'text' => $link['result']['invite_link'],
+                ]);
+                $trial->update(['trial_link' => 1]);
+            }
 
     }
 
