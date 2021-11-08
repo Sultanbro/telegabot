@@ -75,10 +75,18 @@ class TelegramController extends Controller
         $text .= "Для получения пробного периода, введите: /getTrial" . chr(10);
         $text .= "Для оплаты подписки, введите: /pay" . chr(10);
 
-        $this->telegram->sendMessage([
-            'chat_id' => $this->chat_id,
-            'text' => $text ,
-        ]);
+        try {
+            $this->telegram->sendMessage([
+                'chat_id' => $this->chat_id,
+                'text' => $text,
+            ]);
+        } catch (TelegramSDKException $e) {
+            $errorData = $e->getResponseData();
+
+            if ($errorData['ok'] === false) {
+                return "$e";
+            }
+        }
     }
 
 //    public function showMenu($info = null)
@@ -99,18 +107,26 @@ class TelegramController extends Controller
             TrialLink::create(['telegram_user_id' => $this->chat_id, 'trial_link' => 0]);
         }
             if (TrialLink::firstWhere('trial_link', 1)) {
-                $this->telegram->sendMessage([
-                    'chat_id' => $this->chat_id,
-                    'text' => 'Вы уже получали пробный доступ',
-                ]);
+                try {
+                    $this->telegram->sendMessage([
+                        'chat_id' => $this->chat_id,
+                        'text' => 'Вы уже получали пробный доступ',
+                    ]);
+                } catch (TelegramSDKException $e) {
+                    return $e;
+                }
             }else{
                 $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
                     'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
                 ]);
-                $this->telegram->sendMessage([
-                    'chat_id' => $this->chat_id,
-                    'text' => $link['result']['invite_link'],
-                ]);
+                try {
+                    $this->telegram->sendMessage([
+                        'chat_id' => $this->chat_id,
+                        'text' => $link['result']['invite_link'],
+                    ]);
+                } catch (TelegramSDKException $e) {
+                    return $e;
+                }
                 $trial->update(['trial_link' => 1]);
             }
 
@@ -228,7 +244,11 @@ class TelegramController extends Controller
 
         if ($parse_html) $data['parse_mode'] = 'HTML';
 
-        $this->telegram->sendMessage($data);
+        try {
+            $this->telegram->sendMessage($data);
+        } catch (TelegramSDKException $e) {
+            return $e;
+        }
     }
 
 }
