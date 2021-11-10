@@ -37,7 +37,7 @@ class TelegramController extends Controller
 
     public function setWebHook()
     {
-        $url = 'https://a337-87-255-197-10.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
+        $url = 'https://1697-88-204-255-195.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
         $response = $this->telegram->setWebhook(['url' => $url]);
 
         return $response == true ? redirect()->back() : dd($response);
@@ -67,7 +67,7 @@ class TelegramController extends Controller
     public function saveTelegramUser()
     {
         if (!TelegramUser::firstWhere('id', $this->from['id'])) {
-            TelegramUser::created($this->from);
+            TelegramUser::create($this->from);
         }
 
         $text = '';
@@ -116,13 +116,23 @@ class TelegramController extends Controller
                     return $e;
                 }
             }else{
-                $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
-                    'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
+                $linkChat = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
+                    'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(50)->timestamp, 'member_limit' => 1,
                 ]);
+                $linkChannel = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
+                    'chat_id' => env('CHANNEL_id'), 'expire_date' => Carbon::now()->addMinutes(50)->timestamp, 'member_limit' => 1,
+                ]);
+
+                $chat = isset($linkChat['result']['invite_link']) ? $linkChat['result']['invite_link'] : ' ';
+                $channel = isset($linkChannel['result']['invite_link']) ? $linkChannel['result']['invite_link'] : ' ';
+
+                $text = '';
+                $text .= 'Ссылка для чата : ' . $chat . chr(10);
+                $text .= 'Ссылка для канала : ' . $channel . chr(10);
                 try {
                     $this->telegram->sendMessage([
                         'chat_id' => $this->chat_id,
-                        'text' => $link['result']['invite_link'],
+                        'text' => $text ,
                     ]);
                 } catch (TelegramSDKException $e) {
                     return $e;
@@ -140,10 +150,10 @@ class TelegramController extends Controller
 //            return $response['status'];
 //        }
 //        return false;
-//        $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
-//            'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
-//        ]);
-//        return $link['result']['invite_link'];
+        $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
+            'chat_id' => -1001793833599, 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
+        ]);
+        return $link;
     }
 
     public function usersCheck($chats)
