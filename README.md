@@ -1,5 +1,3 @@
-> Sanitized source snapshot for code review. Runtime credentials, operational exports, and personal test data are excluded. External integrations require your own configuration. This legacy project needs dependency and deployment review before production use. Existing license and attribution notices remain applicable. See [SECURITY.md](SECURITY.md).
-
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
 
 <p align="center">
