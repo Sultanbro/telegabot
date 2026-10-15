@@ -8,7 +8,6 @@ use App\Models\TrialLink;
 use Carbon\Carbon;
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use Telegram\Bot\Laravel\Facades\Telegram;
-use coinmarketcap\api\CoinMarketCap;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -24,23 +23,15 @@ class TelegramController extends Controller
     protected $text;
     protected $from;
 
-    public function __construct()
+    protected function telegram()
     {
-        $this->telegram = new Api(env('TELEGRAM_BOT_TOKEN'));
+        return $this->telegram ?? ($this->telegram = new Api(config('telegram.bots.mybot.token')));
     }
 
     public function getMe()
     {
-        $response = $this->telegram->getMe();
+        $response = $this->telegram()->getMe();
         return $response;
-    }
-
-    public function setWebHook()
-    {
-        $url = 'https://1697-88-204-255-195.ngrok.io/' . env('TELEGRAM_BOT_TOKEN');
-        $response = $this->telegram->setWebhook(['url' => $url]);
-
-        return $response == true ? redirect()->back() : dd($response);
     }
 
     public function handleRequest(Request $request)
@@ -76,7 +67,7 @@ class TelegramController extends Controller
         $text .= "Для оплаты подписки, введите: /pay" . chr(10);
 
         try {
-            $this->telegram->sendMessage([
+            $this->telegram()->sendMessage([
                 'chat_id' => $this->chat_id,
                 'text' => $text,
             ]);
@@ -103,12 +94,10 @@ class TelegramController extends Controller
 
     public function trialLinkGroup()
     {
-        if (!$trial = TrialLink::firstWhere('telegram_user_id', $this->from['id'])) {
-            TrialLink::create(['telegram_user_id' => $this->chat_id, 'trial_link' => 0]);
-        }
-            if (TrialLink::firstWhere('trial_link', 1)) {
+        $trial = TrialLink::firstOrCreate(['telegram_user_id' => $this->from['id']], ['trial_link' => 0]);
+            if ($trial->trial_link) {
                 try {
-                    $this->telegram->sendMessage([
+                    $this->telegram()->sendMessage([
                         'chat_id' => $this->chat_id,
                         'text' => 'Вы уже получали пробный доступ',
                     ]);
@@ -130,7 +119,7 @@ class TelegramController extends Controller
                 $text .= 'Ссылка для чата : ' . $chat . chr(10);
                 $text .= 'Ссылка для канала : ' . $channel . chr(10);
                 try {
-                    $this->telegram->sendMessage([
+                    $this->telegram()->sendMessage([
                         'chat_id' => $this->chat_id,
                         'text' => $text ,
                     ]);
@@ -144,14 +133,14 @@ class TelegramController extends Controller
 
     public function userInGroup()
     {
-//        $response = $this->telegram->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => '844867712',]);
+//        $response = $this->telegram()->getChatMember(['chat_id' => env('CHAT_ID'), 'user_id' => '844867712',]);
 //        return $response;
 //        if ($response->status == 'restricted' or $response->status == 'member') {
 //            return $response['status'];
 //        }
 //        return false;
         $link = Http::post('https://api.telegram.org/bot' . env('TELEGRAM_BOT_TOKEN') . '/createChatInviteLink', [
-            'chat_id' => -1001793833599, 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
+            'chat_id' => env('CHAT_ID'), 'expire_date' => Carbon::now()->addMinutes(3)->timestamp, 'member_limit' => 1,
         ]);
         return $link;
     }
@@ -171,7 +160,7 @@ class TelegramController extends Controller
     {
         foreach ($chats_id as $k => $chat) {
             try {
-                $response = $this->telegram->getChatMember(['chat_id' => $chat, 'user_id' => $user_id,]);
+                $response = $this->telegram()->getChatMember(['chat_id' => $chat, 'user_id' => $user_id,]);
                 if ($response->status == 'restricted' or $response->status == 'member') {
                     $results[$k] = 1;
                 } else {
@@ -211,7 +200,7 @@ class TelegramController extends Controller
             if ($user->pay_day < Carbon::now()->toDate()) {
                 foreach ($chats as $chat){
                     try {
-                        $this->telegram->kickChatMember(['chat_id' => $chat, 'user_id' => $user->id,]);
+                        $this->telegram()->kickChatMember(['chat_id' => $chat, 'user_id' => $user->id,]);
                         $user->update(['status' => 2]);
                     } catch (TelegramSDKException $e) {
                         continue;
@@ -221,7 +210,7 @@ class TelegramController extends Controller
             $date = date('Y-m-d', strtotime($user->pay_day. " - 3 day")) ;
             if ($date <= Carbon::now()->toDate()) {
                 try {
-                    $this->telegram->sendMessage([
+                    $this->telegram()->sendMessage([
                         'chat_id' => $user->id,
                         'text' => "Привет, оплати дае а то из группы потеряещся до" . $user->pay_day,
                     ]);
@@ -255,7 +244,7 @@ class TelegramController extends Controller
         if ($parse_html) $data['parse_mode'] = 'HTML';
 
         try {
-            $this->telegram->sendMessage($data);
+            $this->telegram()->sendMessage($data);
         } catch (TelegramSDKException $e) {
             return $e;
         }

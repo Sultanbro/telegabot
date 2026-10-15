@@ -1,65 +1,49 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Telegram Subscription Bot
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![Webhook and trial checks](https://github.com/Sultanbro/telegabot/actions/workflows/tests.yml/badge.svg)](https://github.com/Sultanbro/telegabot/actions/workflows/tests.yml)
 
-## About Laravel
+Backend Telegram-бота на **PHP / Laravel 8** для пробного доступа к закрытому чату и каналу. Обрабатывает команды пользователя, формирует приглашения и содержит плановые проверки участия и срока доступа.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Возможности
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- `/start`: сохранение пользователя и сообщение с доступными командами.
+- `/getTrial`: временные ссылки на чат и канал с ограничением на одного участника.
+- Учёт выданного пробного доступа отдельно для каждого пользователя.
+- Проверка членства и даты окончания доступа через команды планировщика.
+- Webhook с проверкой заголовка `X-Telegram-Bot-Api-Secret-Token`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+В тексте приветствия присутствует `/pay`, но самостоятельный платёжный сценарий этой команды не реализован. Репозиторий не следует воспринимать как готовый сервис платных подписок.
 
-## Learning Laravel
+## Устройство
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Файл | Назначение |
+| --- | --- |
+| [TelegramController](app/Http/Controllers/TelegramController.php) | Обработка команд, приглашения, проверка участников |
+| [VerifyTelegramWebhook](app/Http/Middleware/VerifyTelegramWebhook.php) | Проверка секрета входящего webhook |
+| [routes/api.php](routes/api.php) | `POST /api/telegram/webhook` |
+| [app/Models](app/Models) | Пользователи Telegram, группы и пробный доступ |
+| [app/Console/Commands](app/Console/Commands) | Проверки доступа и регистрация webhook |
+| [app/Console/Kernel.php](app/Console/Kernel.php) | Периодичность выполнения команд |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Используются Laravel 8, Eloquent, Telegram Bot SDK и Laravel HTTP Client. Старые открытые GET-маршруты настройки webhook и создания приглашений удалены; токен бота не используется как путь webhook.
 
-## Laravel Sponsors
+## Проверки одной командой
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+```sh
+git clone https://github.com/Sultanbro/telegabot.git
+cd telegabot
+docker compose -f compose.test.yml run --build --rm tests
+```
 
-### Premium Partners
+Docker устанавливает зависимости из `composer.lock`; PHP 8.1 выбран для воспроизведения существующего стека. **8 тестов** проверяют webhook, закрытие технических маршрутов, начальную страницу и выдачу пробного доступа разным пользователям. SQLite работает в памяти, Telegram SDK и HTTP-ответы подменяются. Сообщения, приглашения и изменения реальных чатов при тестах не отправляются. GitHub Actions запускает те же проверки.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[CMS Max](https://www.cmsmax.com/)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+## Подготовка собственного бота
 
-## Contributing
+1. Установите зависимости совместимым PHP и Composer: `composer install`.
+2. Скопируйте `.env.example` в `.env`, создайте ключ через `php artisan key:generate`.
+3. Настройте отдельную базу в `DB_*`, выполните `php artisan migrate`.
+4. Заполните `TELEGRAM_BOT_TOKEN`, `CHAT_ID`, `CHANNEL_id` и добавьте бота администратором только нужных тестовых чатов.
+5. Задайте `TELEGRAM_WEBHOOK_URL=https://<ваш-домен>/api/telegram/webhook` и отдельный случайный `TELEGRAM_WEBHOOK_SECRET` из 32–256 символов `A–Z`, `a–z`, `0–9`, `_`, `-`.
+6. После настройки HTTPS выполните `php artisan telegram:webhook`. Эта команда регистрирует адрес у Telegram; автоматические тесты её сетевую часть не выполняют.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Для планировщика предусмотрены команды `VerSud`, `CheckPay`, `CheckDay`. Команды могут проверять участников и отзывать доступ, поэтому сначала проверьте их на собственных тестовых чатах. Набор тестов не покрывает полный жизненный цикл подписки и все фоновые задачи. Обновление PHP/Laravel перед производственным использованием — отдельная задача.

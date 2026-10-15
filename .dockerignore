@@ -1,0 +1,15 @@
+
+.git
+.env
+.env.*
+**/env.env
+storage/*.key
+bootstrap/cache/*.php
+*.pem
+*.p12
+*.pfx
+.rnd
+auth.json
+vendor
+node_modules
+storage/logs/*

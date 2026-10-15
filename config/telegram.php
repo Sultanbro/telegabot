@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     /*
     |--------------------------------------------------------------------------
     | Your Telegram Bots
@@ -36,7 +37,7 @@ return [
             'username'            => 'TelegramBot',
             'token'               => env('TELEGRAM_BOT_TOKEN'),
             'certificate_path'    => env('TELEGRAM_CERTIFICATE_PATH', 'YOUR-CERTIFICATE-PATH'),
-            'webhook_url'         => env('TELEGRAM_WEBHOOK_URL', 'https://f488-88-204-255-195.ngrok.io' . env('TELEGRAM_BOT_TOKEN') . '/webhook'),
+            'webhook_url'         => env('TELEGRAM_WEBHOOK_URL'),
             'commands'            => [
                 //Acme\Project\Commands\MyTelegramBot\BotCommand::class
             ],
